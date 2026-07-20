@@ -2,9 +2,9 @@ package com.infinityoreos;
 
 import nu.pattern.OpenCV;
 import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.highgui.HighGui;
+import org.opencv.videoio.VideoCapture;
 
 public class App {
 
@@ -16,42 +16,47 @@ public class App {
         System.out.println("OpenCV version: " + Core.VERSION);
         System.out.println("");
 
-        // assign the mat image the mat of the image file Lena.jpg.
-        String imageName = "Lena.png";
-        Mat image = Imgcodecs.imread(imageName);
-        System.out.println("The file name is " + imageName);
+        // create a camera feed, and Mat 'frame' for the capturing of frames.
+        Mat frame = new Mat();
+        VideoCapture camera = new VideoCapture(0);
 
-        // printing the number of rows, columns, channels, size, whether it's empty
-        System.out.println(image.rows());
-        System.out.println(image.cols());
-        System.out.println(image.channels());
-        System.out.println(image.size());
-
-        if (image.empty()) {
-            System.out.println("The image could not be found!");
-            image.release();
+        // check the camera has actually opened.
+        if (!camera.isOpened()) {
+            System.out.println("Camera failed to open!");
+            camera.release();
             return;
         }
+        System.out.println("The camera has been opened.");
+        System.out.println("Press 'q' to quit the camera.");
 
-        // reading and printing out the BGR values of that same pixel at (0,0)
-        double[] pixel = image.get(0, 0);
-        System.out.println(pixel[0]);
-        System.out.println(pixel[1]);
-        System.out.println(pixel[2]);
+        // while loop to continuously read the next frame into the Mat 'frame'
+        while (true) {
+            boolean frameRead = camera.read(frame);
 
-        // now, reassign the value of the pixel at that point to be blue.
+            if (!frameRead) {
+                System.out.print("Frame could not be read!");
+                break;
+            }
 
-        image.put(0, 0, new double[] { 255, 0, 0 });
+            // display the frame captured & declare the waitKey
+            HighGui.imshow("Camera Frame", frame);
+            int key = HighGui.waitKey(10);
 
-        // I want to begin seeing the images. The image will be saved.
+            if (key != -1) {
+                System.out.println("Raw key: " + key);
+                System.out.println("Masked key: " + (key & 0xFF));
+            }
 
-        // imwrite is a boolean. Capture it to allow it to be used.
-        boolean ImageSaved = Imgcodecs.imwrite("output.png", image);
+            if (key == 'Q') {
+                System.out.println("Quitting camera.");
+                break;
+            }
+        }
 
-        System.out.println("Image saved: " + ImageSaved);
-
-        // (post feedback) it is good to release native memory (Mat) when finished.
-        // this is important in bigger projects, eg. continuously reading a camera feed.
-        image.release();
+        System.out.println("We are now going to cleanup and release.");
+        camera.release();
+        frame.release();
+        HighGui.destroyAllWindows();
+        System.exit(0);
     }
 }
