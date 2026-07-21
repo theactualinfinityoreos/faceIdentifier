@@ -2,9 +2,13 @@ package com.infinityoreos;
 
 import nu.pattern.OpenCV;
 import org.opencv.core.Core;
+import org.opencv.core.Size;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
 import org.opencv.core.Mat;
 import org.opencv.highgui.HighGui;
-import org.opencv.videoio.VideoCapture;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 
 public class App {
 
@@ -16,47 +20,49 @@ public class App {
         System.out.println("OpenCV version: " + Core.VERSION);
         System.out.println("");
 
-        // create a camera feed, and Mat 'frame' for the capturing of frames.
-        Mat frame = new Mat();
-        VideoCapture camera = new VideoCapture(0);
+        // capture a single image into a Mat to prepare for processing.
 
-        // check the camera has actually opened.
-        if (!camera.isOpened()) {
-            System.out.println("Camera failed to open!");
-            camera.release();
-            return;
-        }
-        System.out.println("The camera has been opened.");
-        System.out.println("Press 'q' to quit the camera.");
+        String fileName = "cat.jpg";
+        Mat originalImage = Imgcodecs.imread(fileName);
+        Mat originalWithRectangle = originalImage.clone();
+        Mat grayScaleImage = new Mat();
+        Mat blurredGrayScaleImage = new Mat();
 
-        // while loop to continuously read the next frame into the Mat 'frame'
-        while (true) {
-            boolean frameRead = camera.read(frame);
+        // need details about the original to draw the photo correctly
+        // because I am working in a public space, Lena.png has been replaced with
+        // cat.jpg
+        System.out.println("Number of rows: " + originalImage.rows());
+        System.out.println("Number of columns: " + originalImage.cols());
 
-            if (!frameRead) {
-                System.out.print("Frame could not be read!");
-                break;
-            }
+        Imgproc.rectangle(
+                originalWithRectangle,
+                new Point(271, 405),
+                new Point(542, 675),
+                new Scalar(0, 0, 255),
+                2);
 
-            // display the frame captured & declare the waitKey
-            HighGui.imshow("Camera Frame", frame);
-            int key = HighGui.waitKey(10);
+        Imgproc.putText(
+                originalWithRectangle,
+                "cat",
+                new Point(271, 393),
+                Imgproc.FONT_HERSHEY_PLAIN,
+                2,
+                new Scalar(255, 255, 255));
 
-            if (key != -1) {
-                System.out.println("Raw key: " + key);
-                System.out.println("Masked key: " + (key & 0xFF));
-            }
+        Imgproc.cvtColor(originalImage, grayScaleImage, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.GaussianBlur(grayScaleImage, blurredGrayScaleImage, new Size(5, 5), 0);
 
-            if (key == 'Q') {
-                System.out.println("Quitting camera.");
-                break;
-            }
-        }
+        HighGui.imshow("Original with Rectangle", originalWithRectangle);
+        HighGui.imshow("Blurred Greyscale", blurredGrayScaleImage);
+        HighGui.waitKey(0);
 
-        System.out.println("We are now going to cleanup and release.");
-        camera.release();
-        frame.release();
+        // cleanup
+        originalImage.release();
+        originalWithRectangle.release();
+        grayScaleImage.release();
+        blurredGrayScaleImage.release();
         HighGui.destroyAllWindows();
         System.exit(0);
+
     }
 }
