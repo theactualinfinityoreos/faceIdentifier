@@ -1,14 +1,16 @@
 package com.infinityoreos;
 
-import nu.pattern.OpenCV;
 import org.opencv.core.Core;
-import org.opencv.core.Size;
-import org.opencv.core.Point;
-import org.opencv.core.Scalar;
 import org.opencv.core.Mat;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.highgui.HighGui;
+import org.opencv.core.MatOfRect;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+
+import nu.pattern.OpenCV;
 
 public class App {
 
@@ -20,47 +22,53 @@ public class App {
         System.out.println("OpenCV version: " + Core.VERSION);
         System.out.println("");
 
-        // capture a single image into a Mat to prepare for processing.
+        // prepare the cascade, images, and MatOfRect for facial detection
+        String cascadeName = "src/main/resources/haarcascade_frontalface_default.xml";
+        String imageName = "face1.jpeg";
 
-        String fileName = "cat.jpg";
-        Mat originalImage = Imgcodecs.imread(fileName);
-        Mat originalWithRectangle = originalImage.clone();
-        Mat grayScaleImage = new Mat();
-        Mat blurredGrayScaleImage = new Mat();
+        Mat originalImage = Imgcodecs.imread("src/main/resources/" + imageName);
+        if (originalImage.empty()) {
+            System.out.println("Image failed to load!");
+            originalImage.release();
+            return;
+        }
 
-        // need details about the original to draw the photo correctly
-        // because I am working in a public space, Lena.png has been replaced with
-        // cat.jpg
-        System.out.println("Number of rows: " + originalImage.rows());
-        System.out.println("Number of columns: " + originalImage.cols());
+        Mat imageRectAroundFaces = originalImage.clone();
+        Mat imageGrayScale = new Mat();
 
-        Imgproc.rectangle(
-                originalWithRectangle,
-                new Point(271, 405),
-                new Point(542, 675),
-                new Scalar(0, 0, 255),
-                2);
+        MatOfRect faces = new MatOfRect();
 
-        Imgproc.putText(
-                originalWithRectangle,
-                "cat",
-                new Point(271, 393),
-                Imgproc.FONT_HERSHEY_PLAIN,
-                2,
-                new Scalar(255, 255, 255));
+        CascadeClassifier classifier = new CascadeClassifier(cascadeName);
 
-        Imgproc.cvtColor(originalImage, grayScaleImage, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.GaussianBlur(grayScaleImage, blurredGrayScaleImage, new Size(5, 5), 0);
+        if (classifier.empty()) {
+            System.out.println("Classifier failed to load!");
+            return;
+        }
 
-        HighGui.imshow("Original with Rectangle", originalWithRectangle);
-        HighGui.imshow("Blurred Greyscale", blurredGrayScaleImage);
+        // make the grayscale copy
+        Imgproc.cvtColor(originalImage, imageGrayScale, Imgproc.COLOR_BGR2GRAY);
+
+        // detect the faces
+        classifier.detectMultiScale(imageGrayScale, faces);
+        // convert our Mat of faces to a Rect[] to iterate over
+        Rect[] facesArray = faces.toArray();
+
+        System.out.println("Number of faces found: " + facesArray.length);
+
+        for (Rect face : facesArray) {
+            System.out.println(face);
+            Imgproc.rectangle(
+                    imageRectAroundFaces, face, new Scalar(0, 255, 0, 2)); // the '2' is thickness
+        }
+
+        // HighGui.imshow("Grayscale", imageGrayScale);
+        HighGui.imshow("Original with Rectangles", imageRectAroundFaces);
         HighGui.waitKey(0);
 
-        // cleanup
         originalImage.release();
-        originalWithRectangle.release();
-        grayScaleImage.release();
-        blurredGrayScaleImage.release();
+        imageRectAroundFaces.release();
+        imageGrayScale.release();
+        faces.release();
         HighGui.destroyAllWindows();
         System.exit(0);
 
