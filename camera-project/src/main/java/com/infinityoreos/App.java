@@ -10,11 +10,11 @@ import org.opencv.core.MatOfRect;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
 
 import nu.pattern.OpenCV;
 
 public class App {
-
     public static void main(String[] args) {
         OpenCV.loadLocally();
 
@@ -60,6 +60,14 @@ public class App {
         }
         ;
 
+        // Set the size of the camera to be smaller to save resources
+        camera.set(Videoio.CAP_PROP_FRAME_WIDTH, 640);
+        camera.set(Videoio.CAP_PROP_FRAME_HEIGHT, 480);
+
+        // Check the camera width is set correctly
+        System.out.println(camera.get(Videoio.CAP_PROP_FRAME_WIDTH));
+        System.out.println(camera.get(Videoio.CAP_PROP_FRAME_HEIGHT));
+
         while (camera.read(frame)) {
             // The camera is actively reading frames.
             Imgproc.cvtColor(
@@ -75,7 +83,8 @@ public class App {
                     1.1,
                     5,
                     0,
-                    new Size(30, 30));
+                    new Size(30, 30),
+                    new Size(400, 400));
 
             sideClassifier.detectMultiScale(
                     greyFrame,
@@ -83,7 +92,8 @@ public class App {
                     1.1,
                     5,
                     0,
-                    new Size(30, 30));
+                    new Size(30, 30),
+                    new Size(400, 400));
 
             facesArray = faces.toArray();
             sidesArray = sides.toArray();
